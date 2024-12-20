@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "fasterdataclasses"
+version = "0.1.0"
+description = ""
+authors = ["Andre998 <a.rizzardi@reply.it>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "3.11.6"
+duckdb = "^1.1.3"
+pandas = "^2.2.3"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
