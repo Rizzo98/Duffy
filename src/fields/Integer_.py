@@ -11,6 +11,10 @@ class Integer(Field):
     @property
     def value(self):
         return self._value
+
+    @property
+    def python_type(self):
+        return int
     
     def __repr__(self):
         return self.field_name

@@ -1,6 +1,7 @@
-from typing import Any, Dict, Generic, List, Optional, Tuple, Type, TypeVar, Union
+from typing import Any, Dict, List, Optional, Tuple, Type, Union
 from src.fields.String_ import String
 from src.dataRepr import DataRepr
+from src.slottedClass import SlottedClass
 import duckdb
 
 
@@ -10,10 +11,18 @@ class GroupedCollection:
 
     def __init__(self, from_:str, dataRepr:DataRepr, *group_by:Tuple[String]):
         self.__select:str = ', '.join([str(column) for column in group_by])
+        self.__select_unionChar:str = ', '
         self.__from:str = from_
         self.__dataRepr:DataRepr = dataRepr
         self.__aggregate_select:str = ''
         self.__group_by_columns_str:str = f" GROUP BY {', '.join([str(column) for column in group_by])}"
+    
+    @property
+    def selected_columns(self)->List[str]:
+        if self.__select == '*':
+            return list(self.__dataRepr.__annotations__.keys())
+        else:
+            return self.__select.split(self.__select_unionChar)
     
     def __execute_query(self)->duckdb.DuckDBPyRelation:
         query:str = f"""SELECT {self.__select} {self.__aggregate_select}
@@ -34,7 +43,9 @@ class GroupedCollection:
         res = self.__execute_query()
         columns:List[str] = res.columns
         result:List[Tuple[Any]] = res.fetchall()
-        new_dataRepr:Type =  DataRepr(self.__dataRepr.__name__, (object,), {})
+        
+        cols:Dict[str,Type] = {col:getattr(self.__dataRepr, col).python_type for col in self.selected_columns}
+        new_dataRepr:Type =  SlottedClass(self.__dataRepr.__name__, (object,), cols)
         to_return:Dict[DataRepr, int] = {}
         for row in result:
             instance:DataRepr = new_dataRepr()

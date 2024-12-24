@@ -1,9 +1,10 @@
 from __future__ import annotations
-from typing import Any, Iterator, List, Tuple, Self, Union, Type, TYPE_CHECKING
+from typing import Any, Dict, Iterator, List, Tuple, Self, Union, Type, TYPE_CHECKING
 from custom_dataclasses.persona import Persona
 from src.fields.Field_ import Field
 from src.fields.String_ import String
 from src.dataRepr import DataRepr
+from src.slottedClass import SlottedClass
 from functools import reduce
 import duckdb
 import os
@@ -69,15 +70,15 @@ class Collection:
         to_return:List[DataRepr] = []
         result = self.__execute_query().fetchall()
         
-        new_dataRepr:Type =  DataRepr(self.__dataRepr.__name__, (object,), {})
-
+        cols:Dict[str,Type] = {col:getattr(self.__dataRepr, col).python_type for col in self.selected_columns}
+        new_dataRepr:Type =  SlottedClass(self.__dataRepr.__name__, (object,), cols)
         for row in result:
             instance:DataRepr = new_dataRepr()
             for attr_name, attr_val in zip(self.selected_columns, row):
                 instance.__setattr__(attr_name, attr_val)
             to_return.append(instance)
         return to_return
-    
+     
     def iterate_over_columns(self, *columns:Tuple[String]) -> Iterator[Tuple[Any,Self]]:
         '''
         This method allows to iterate over unique values of a column.
