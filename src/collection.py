@@ -69,14 +69,15 @@ class Collection:
         '''
         to_return:List[DataRepr] = []
         result = self.__execute_query().fetchall()
-        
         cols:Dict[str,Type] = {col:getattr(self.__dataRepr, col).python_type for col in self.selected_columns}
         new_dataRepr:Type =  SlottedClass(self.__dataRepr.__name__, (object,), cols)
+
         for row in result:
-            instance:DataRepr = new_dataRepr()
+            instance:SlottedClass = new_dataRepr()
             for attr_name, attr_val in zip(self.selected_columns, row):
                 instance.__setattr__(attr_name, attr_val)
             to_return.append(instance)
+
         return to_return
      
     def iterate_over_columns(self, *columns:Tuple[String]) -> Iterator[Tuple[Any,Self]]:
@@ -109,11 +110,18 @@ class Collection:
         Counts the number of rows in the collection.
         If columns are specified, it counts the number of rows grouped by the columns.
         '''
-        ...
+        if columns:
+            return self.group_by(*columns).count()
+        else:
+            new_collection:Self = self.copy()
+            new_collection.__select = 'COUNT(*)'
+            return new_collection.__execute_query().fetchall()[0][0]
 
 
 if __name__ == '__main__':
     c = Collection(["data", "classe.csv"], Persona)
+    
+    print(c.count(Persona.Gender))
 
     for t,v in c.group_by(Persona.Gender).count().items():
         print(t, v)
@@ -122,7 +130,7 @@ if __name__ == '__main__':
         print(t, v)
 
     for value, collection in c.iterate_over_columns(Persona.Gender):
-        persone = collection.collect() #TODO: implementare multiprocess
+        persone = collection.collect()
         print(value)
         print(persone)
 
